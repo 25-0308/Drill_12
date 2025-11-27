@@ -105,6 +105,11 @@ class Zombie:
         self.x += distance * math.cos(self.dir)
         self.y += distance * math.sin(self.dir)
 
+    def move_reverse_to(self, tx, ty):
+        self.dir = math.atan2(ty - self.y, tx - self.x)
+        distance = RUN_SPEED_PPS * game_framework.frame_time
+        self.x -= distance * math.cos(self.dir)
+        self.y -= distance * math.sin(self.dir)
 
 
     def move_to(self, r=0.5):
@@ -136,6 +141,14 @@ class Zombie:
         else:
             return BehaviorTree.RUNNING
 
+    def back_to_boy(self, r=0.5):
+        self.state = 'Walk'
+        self.move_reverse_to(common.boy.x, common.boy.y)
+        if self.distance_less_than(self.x, self.y, common.boy.x, common.boy.y, r):
+            return BehaviorTree.SUCCESS
+        else:
+            return BehaviorTree.RUNNING
+
     def get_patrol_location(self):
         self.tx,self.ty = self.patrol_locations[self.loc_no]
         self.loc_no = (self.loc_no +1) % len(self.patrol_locations)
@@ -152,10 +165,11 @@ class Zombie:
 
         c1 = Condition('소년이 근처에 있는가',self.if_boy_nearby,7)
         a4 = Action('소년 추적',self.move_to_boy)
+        a5 = Action('소년에게서 뒤로 물러나기',self.back_to_boy)
         root = chase_boy_if_nearby = Sequence('소년 근처에 있으면 추적',c1,a4)
-
+        root = back_boy_if_nearby = Sequence('소년 근처에 있으면 뒤로 물러나기',c1,a5)
         root = chase_or_nearby = Selector('추적하거나 배회', chase_boy_if_nearby, wander)
-
+        root = back_or_wander = Selector('뒤로 물러나거나 배회', back_boy_if_nearby, wander)
         self.bt = BehaviorTree(root)
 
 
