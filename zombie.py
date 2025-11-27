@@ -161,6 +161,7 @@ class Zombie:
         else:
             return BehaviorTree.FAIL
 
+
     def get_patrol_location(self):
         self.tx,self.ty = self.patrol_locations[self.loc_no]
         self.loc_no = (self.loc_no +1) % len(self.patrol_locations)
