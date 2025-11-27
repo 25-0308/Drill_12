@@ -44,7 +44,7 @@ class Zombie:
         self.speed = 0.0
         self.frame = random.randint(0, 9)
         self.state = 'Idle'
-        self.ball_count = 0
+        self.ball_count = 10
 
 
         self.tx, self.ty = 1000, 1000
@@ -149,6 +149,18 @@ class Zombie:
         else:
             return BehaviorTree.RUNNING
 
+    def boy_vs_zombie(self):
+        if self.ball_count > common.boy.ball_count:
+            return BehaviorTree.SUCCESS
+        else:
+            return BehaviorTree.FAIL
+
+    def boy_vs_zombie2(self):
+        if self.ball_count < common.boy.ball_count:
+            return BehaviorTree.SUCCESS
+        else:
+            return BehaviorTree.FAIL
+
     def get_patrol_location(self):
         self.tx,self.ty = self.patrol_locations[self.loc_no]
         self.loc_no = (self.loc_no +1) % len(self.patrol_locations)
@@ -165,11 +177,22 @@ class Zombie:
 
         c1 = Condition('소년이 근처에 있는가',self.if_boy_nearby,7)
         a4 = Action('소년 추적',self.move_to_boy)
-        a5 = Action('소년에게서 뒤로 물러나기',self.back_to_boy)
-        root = chase_boy_if_nearby = Sequence('소년 근처에 있으면 추적',c1,a4)
-        root = back_boy_if_nearby = Sequence('소년 근처에 있으면 뒤로 물러나기',c1,a5)
-        root = chase_or_nearby = Selector('추적하거나 배회', chase_boy_if_nearby, wander)
-        root = back_or_wander = Selector('뒤로 물러나거나 배회', back_boy_if_nearby, wander)
+
+        root = chase_boy_if_nearby = Sequence('소년 근처에 있으면 추적', c1, a4)
+
+        a5 = Action('소년에게서 뒤로 물러나기', self.back_to_boy)
+
+        root = back_boy_if_nearby = Sequence('소년 근처에 있으면 뒤로 물러나기', c1, a5)
+
+        c2 = Condition('소년보다 공이 많은가',self.boy_vs_zombie)
+        root = better_to_chase = Sequence('소년보다 공이 많으면 추적',c2,chase_boy_if_nearby)
+
+        c3 = Condition('소년보다 공이 적은가',self.boy_vs_zombie2)
+        root = worse_to_back = Sequence('소년보다 공이 적으면 뒤로 물러나기',c3,back_boy_if_nearby)
+
+
+        root = back_or_chase = Selector('뒤로 물러나거나 추적하거나 배회', worse_to_back, better_to_chase,wander)
+
         self.bt = BehaviorTree(root)
 
 
